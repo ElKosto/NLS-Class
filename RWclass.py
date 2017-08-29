@@ -12,6 +12,7 @@ Try classes!
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import complex_ode
+from scipy.linalg import toeplitz
 
 plt.rc('text', usetex=True)
 #plt.rc('font', family='arial')
@@ -179,19 +180,23 @@ class Stand_Func(Efield):
 
 
 def IST(field, dT, Peroidized=250):
-    #Time = np.arange(0,len(field),dT)
-    coords=[]
+    coords = []
     def onclick(event):
-        global coords
         ix, iy = event.xdata, event.ydata
         print 'x = %d, y = %d'%(ix, iy)
-        #
-        if len(coords) == 2:
-            f.canvas.mpl_disconnect(cid)
+    
         coords.append((ix, iy))
-        return
-    
-    
+        if np.size(coords,0) == 2:
+            f.canvas.mpl_disconnect(cid)
+            if coords[0][0] < coords[1][0]:
+                st = int(np.floor(coords[0][0]))
+                sp = int(np.floor(coords[1][0]))
+            elif coords[0][0] > coords[1][0]:
+                sp = int(np.floor(coords[0][0]))
+                st = int(np.floor(coords[1][0]))
+            plt.plot(np.arange(st,sp),abs(field[st:sp])**2,'r')
+            plt.show()
+        
     f = plt.figure()
     ax = f.add_subplot(111)
     plt.suptitle('Choose the working area', fontsize=20)
@@ -202,8 +207,6 @@ def IST(field, dT, Peroidized=250):
     plt.ylim(0, max(abs(field)**2)+1)
     plt.xlim(0, len(field))
     cid = f.canvas.mpl_connect('button_press_event', onclick)
-    ax.plot(abs(field[coords[0][0]:coords[0][1]])**2,'r')
-    return 1
 
 
 
