@@ -213,7 +213,7 @@ also good to do things for the wave shaper! line the method wgich could show the
 """
 #%%
 a = RandomWave(0.1,1.)
-#a.PlotSig()
+
 IST(a.Sig,a.TimeStep)
 
 #Dist = 0.4
