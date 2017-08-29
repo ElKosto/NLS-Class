@@ -191,6 +191,7 @@ def IST(field, dT, Peroidized=250):
         coords.append((ix, iy))
         return
     
+    
     f = plt.figure()
     ax = f.add_subplot(111)
     plt.suptitle('Choose the working area', fontsize=20)
@@ -201,7 +202,6 @@ def IST(field, dT, Peroidized=250):
     plt.ylim(0, max(abs(field)**2)+1)
     plt.xlim(0, len(field))
     cid = f.canvas.mpl_connect('button_press_event', onclick)
-    
     ax.plot(abs(field[coords[0][0]:coords[0][1]])**2,'r')
     return 1
 
