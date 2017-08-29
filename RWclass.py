@@ -12,7 +12,7 @@ Try classes!
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import complex_ode
-from scipy.linalg import toeplitz
+from scipy.linalg import toeplitz, eigvals
 
 plt.rc('text', usetex=True)
 #plt.rc('font', family='arial')
@@ -180,23 +180,22 @@ class Stand_Func(Efield):
 
 def ISTcompute(field,dT):
     # Fourier collocation method for the Z-S eigenvalue problem
-    N = len(field)
-    L = dT*N
-    k0=2*np.pi/L
-    dx = dT/2
-    x = np.arange(-L/2,L/2-dx,dx)
+    Nx = len(field)
+    N =Nx/2
+    L = dT*Nx
+    k0 = 2*np.pi/L
+    x = np.arange(-L/2,L/2,dT)
     C = []    
-    for n in np.arange(-N,N):
-        C.append(dx*np.sum(field*np.exp(-1j*k0*n*x)))
-    B1 = 1j*k0*np.diag(np.arange(-N,N))
-    B2 = toeplitz(C())
-    # return ZSeigenVal
+    for n in np.arange(-N,N+1):
+        C.append(dT*np.sum(field*np.exp(-1j*k0*n*x))/L)
+    B1 = 1j*k0*np.diag(np.arange(-N, N+1))
+    B2 = toeplitz(np.append(C[N:], np.zeros(N)), np.append(np.flip(C[:N+1],0), np.zeros(N)))
+    M = np.concatenate((np.concatenate((-B1,B2), axis=1), np.concatenate((B2.conj().T,B1), axis=1)), axis=0) 
+    return eigvals(M)
     
 
 
 def IST(field, dT, Peroidized=250):
-
-    
     coords = []
     def onclick(event):
         ix, iy = event.xdata, event.ydata
@@ -213,7 +212,8 @@ def IST(field, dT, Peroidized=250):
                 st = int(np.floor(coords[1][0]))
             ax.plot(np.arange(st,sp),abs(field[st:sp])**2,'r')
             axIST = f.add_subplot(212)
-            axIST.plot(np.sin(np.linspace(-3,3,1e3)))        
+            ev = ISTcompute(field,dT)
+            axIST.plot(ev.imag, ev.real, 'r.')  
             plt.show()
         
     f = plt.figure()
