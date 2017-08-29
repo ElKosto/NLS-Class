@@ -190,7 +190,7 @@ def ISTcompute(field,dT):
         C.append(dx*np.sum(field*np.exp(-1j*k0*n*x)))
     B1 = 1j*k0*np.diag(np.arange(-N,N))
     B2 = toeplitz(C())
-    return ZSeigenVal
+    # return ZSeigenVal
     
 
 
