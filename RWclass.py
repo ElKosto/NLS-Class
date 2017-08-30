@@ -15,52 +15,52 @@ from scipy.integrate import complex_ode
 from scipy.linalg import toeplitz, eigvals
 
 plt.rc('text', usetex=True)
-#plt.rc('font', family='arial')
 
 
 class Efield:
-    def __init__(self,CompField,dT):
+
+    def __init__(self, CompField, dT):
         self.Sig = CompField
         self.TimeStep = dT
         self.AvgPower = np.mean(abs(CompField)**2)
+        assert isinstance(CompField, object)
         self.Span = dT*len(CompField)
-        
-        
+
     def PlotSig(self):
-        def cm(x,y): return np.sum(x*y)/np.sum(y) # Center Of Mass
-        def StDiv(x,y): return np.sqrt(np.sum(y*(x-cm(x,y))**2)/np.sum(y)) # Standard Div
-        Time = np.arange(0,self.Span,self.TimeStep)
-        f,ax=plt.subplots(2)
+        def cm(x, y): return np.sum(x*y)/np.sum(y)  # Center Of Mass
+
+        def StDiv(x, y): return np.sqrt(np.sum(y*(x-cm(x, y))**2)/np.sum(y))  # Standard Div
+        Time = np.arange(0, self.Span, self.TimeStep)
+        f, ax = plt.subplots(2)
         f.suptitle(r' \textless P\textgreater = '+str(self.AvgPower)+'W', fontsize=10)
         f.set_size_inches(8,6)
-        ax[0].plot(Time,abs(self.Sig)**2,'r')
+        ax[0].plot(Time, abs(self.Sig)**2, 'r')
         ax[0].set_xlabel('Time (ps)')
         ax[0].set_ylabel('Power (W)')
         ax[1].plot(np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep),abs(np.fft.fft(self.Sig))**2/np.max(abs(np.fft.fft(self.Sig))**2),'b.')
         ax[1].set_xlim([-1*StDiv(Time,self.Sig)/2,1*StDiv(Time,self.Sig)/2])
         ax[1].set_xlabel('Freq (THz)',color='g')
         ax[1].set_ylabel('Power Spectr. Density', color='r')
-
                 
     def Propagate_SSFM(self, L, betta2=-1,gamma=1, dz=1e-3, param='fin_res'):
-        'Propagate Using the split step fourier method'
-        uf=self.Sig
+        """Propagate Using the split step fourier method"""
+        uf = self.Sig
         freq = np.fft.fftfreq(len(self.Sig), d=self.TimeStep)
         for ii in np.arange(np.round(L/dz)):
             ii = int(ii)
-            ## map array
+            # map array
             if param == 'map' and ii == 0:
-                maping = np.zeros((int(np.round(L/dz+1)),len(self.Sig)))
+                maping = np.zeros((int(np.round(L/dz+1)), len(self.Sig)))
                 maping[0] = self.Sig
             elif param == 'map' and ii > 0:
                 maping[ii] = uf
-            #half step of dispersion
-            fftu = np.fft.fft(uf)*np.exp(1j*np.power(np.pi*freq,2)*betta2*dz)
-            #step of nonlinearity
-            uf = np.fft.ifft(fftu)*np.exp(1j*np.power(abs(uf),2)*gamma*dz) 
-            #half step of disp
-            fftu = np.fft.fft(uf)*np.exp(1j*np.power(np.pi*freq,2)*betta2*dz)
-            #go back
+            # half step of dispersion
+            fftu = np.fft.fft(uf)*np.exp(1j*np.power(np.pi*freq, 2)*betta2*dz)
+            # step of nonlinearity
+            uf = np.fft.ifft(fftu)*np.exp(1j*np.power(abs(uf), 2)*gamma*dz)
+            # half step of disp
+            fftu = np.fft.fft(uf)*np.exp(1j*np.power(np.pi*freq, 2)*betta2*dz)
+            # go back
             uf = np.fft.ifft(fftu)
         if param == 'map':
             return maping
@@ -68,38 +68,38 @@ class Efield:
             return uf
         else:
             print 'wrong parameter'
-            
-            
-    def Propagate_SAM(self, L, betta2=-1,gamma=1, dz=1e-3, param='fin_res'):
-        'Propagate Using the Step Adaptative  Method'
-        def deriv_2(dt,field_in):
+
+    def Propagate_SAM(self, L, betta2=-1, gamma=1, dz=1e-3, param='fin_res'):
+        """Propagate Using the Step Adaptative  Method"""
+        def deriv_2(dt, field_in):
         # computes the second-order derivative of field_in
-            field_fft=np.fft.fft(field_in)
-            freq=1./dt*np.fft.fftfreq(len(field_in))
-            #print freq
-            omega=2.*np.pi*freq
-            #    field_fft*=np.exp(1j*0.5*beta2z*omega**2)
-            field_fft*=-omega**2
-            out_field=np.fft.ifft(field_fft)
+            field_fft = np.fft.fft(field_in)
+            freq = 1./dt*np.fft.fftfreq(len(field_in))
+            # print freq
+            omega = 2.*np.pi*freq
+            # field_fft*=np.exp(1j*0.5*beta2z*omega**2)
+            field_fft *= -omega**2
+            out_field = np.fft.ifft(field_fft)
             return out_field 
  
-        def NLS_1d(Z,A):
+        def NLS_1d(Z, A):
             # time second order derivative
-            dAdT2=deriv_2(self.TimeStep,A)
+            dAdT2 = deriv_2(self.TimeStep, A)
             dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A
             return dAdz
         
         r = complex_ode(NLS_1d).set_integrator('vode', method='BDF', atol=1e-15, with_jacobian=False)
-        r.set_initial_value(self.Sig,0)
-        sol=np.ndarray(shape=(int(np.round(L/dz)+1),len(self.Sig)), dtype=complex)
-        for it in range(0,int(np.round(L/dz))):
-            sol[it]=r.integrate(r.t+dz)
+        r.set_initial_value(self.Sig, 0)
+        sol=np.ndarray(shape=(int(np.round(L/dz)+1), len(self.Sig)), dtype=complex)
+        for it in range(0, int(np.round(L/dz))):
+            sol[it] = r.integrate(r.t+dz)
         if param == 'map':
             return sol
         elif param == 'fin_res':
-            return sol[-2,:]
+            return sol[-2, :]
         else:
             print 'wrong parameter'
+
 
 class RandomWave(Efield):
     """
@@ -107,7 +107,7 @@ class RandomWave(Efield):
         The output self.Sig is a complex field
         Pet.__init__(self, name, "Dog")
     """
-    def __init__(self,dNu,Pavg,NofP=1e4,dT=0.05):
+    def __init__(self, dNu, Pavg, NofP=1e4, dT=0.05):
         self.SpWidth = dNu
         self.AvgPower = Pavg
         self.Span = NofP*dT
@@ -132,15 +132,15 @@ class RandomWave(Efield):
 #        self.Sig = A*np.exp(1j*Ph)
         
     def PlotSig(self):
-        f,ax=plt.subplots(2)
+        f, ax = plt.subplots(2)
         f.suptitle(r' \textless P\textgreater = '+str(self.AvgPower)+' W; \Delta\\nu = '+str(self.SpWidth)+'THz', fontsize=10)
-        f.set_size_inches(8,6)
-        ax[0].plot(np.arange(0,self.Span,self.TimeStep),abs(self.Sig)**2,'r')
+        f.set_size_inches(8, 6)
+        ax[0].plot(np.arange(0, self.Span, self.TimeStep), abs(self.Sig)**2, 'r')
         ax[0].set_xlabel('Time (ps)')
         ax[0].set_ylabel('Power (W)')
-        ax[1].plot(np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep),abs(np.fft.fft(self.Sig))**2/np.max(abs(np.fft.fft(self.Sig))**2),'b.')
-        ax[1].set_xlim([-2*self.SpWidth,2*self.SpWidth])
-        ax[1].set_xlabel('Freq (THz)',color='g')
+        ax[1].plot(np.fft.fftfreq(int(len(self.Sig)), d=self.TimeStep), abs(np.fft.fft(self.Sig))**2/np.max(abs(np.fft.fft(self.Sig))**2), 'b.')
+        ax[1].set_xlim([-2*self.SpWidth, 2*self.SpWidth])
+        ax[1].set_xlabel('Freq (THz)', color='g')
         ax[1].set_ylabel('Power Spectr. Density', color='r')
         plt.show()
         
@@ -150,25 +150,26 @@ class Stand_Func(Efield):
         Stand_Func acsept the Executable func or 'sech' to test the 
         The output self.Sig is Amplitude
     """
-    def __init__(self,ExecutFunc,NofP=1e4,dT=0.01):        
+    def __init__(self, ExecutFunc, NofP=1e4, dT=0.01):
         self.Span = NofP*dT
         self.TimeStep = dT
         
         _T = np.arange(-1*np.round(self.Span/2),np.round(self.Span/2),self.TimeStep)
-        if  ExecutFunc=='Sech' or ExecutFunc=='sech':
+        if ExecutFunc == 'Sech' or ExecutFunc == 'sech':
             self.Sig = 1/np.cosh(_T)
         else:
             self.Sig = ExecutFunc(_T)
         self.AvgPower = np.mean(abs(self.Sig)**2)
         
     def PlotSig(self):
-        def cm(x,y): return np.sum(x*y)/np.sum(y) # Center Of Mass
-        def StDiv(x,y): return np.sqrt(np.sum(y*(x-cm(x,y))**2)/np.sum(y)) # Standard Div
-        Time = np.arange(0,self.Span,self.TimeStep)
-        f,ax=plt.subplots(2)
-        f.suptitle(r' Peak Power = '+str(np.max(abs(self.Sig)**2))+' W' , fontsize=10)
-        f.set_size_inches(8,6)
-        ax[0].plot(Time,abs(self.Sig)**2,'r')
+        def cm(x, y): return np.sum(x*y)/np.sum(y)  # Center Of Mass
+
+        def StDiv(x, y): return np.sqrt(np.sum(y*(x-cm(x,y))**2)/np.sum(y))  # Standard Div
+        Time = np.arange(0, self.Span, self.TimeStep)
+        f, ax = plt.subplots(2)
+        f.suptitle(r' Peak Power = '+str(np.max(abs(self.Sig)**2))+' W', fontsize=10)
+        f.set_size_inches(8, 6)
+        ax[0].plot(Time, abs(self.Sig)**2, 'r')
         ax[0].set_xlabel('Time (ps)')
         ax[0].set_ylabel('Power (W)')
         ax[1].plot(np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep),abs(np.fft.fft(self.Sig))**2/np.max(abs(np.fft.fft(self.Sig))**2),'b.')
@@ -178,31 +179,31 @@ class Stand_Func(Efield):
         plt.show()
 
 
-def ISTcompute(field,dT):
+def ISTcompute(field, dT):
     # Fourier collocation method for the Z-S eigenvalue problem
     Nx = len(field)
-    N =Nx/2
+    N = Nx/2
     L = dT*Nx
     k0 = 2*np.pi/L
-    x = np.arange(-L/2,L/2,dT)
+    x = np.arange(-L/2, L/2, dT)
     C = []    
-    for n in np.arange(-N,N+1):
+    for n in np.arange(-N, N+1):
         C.append(dT*np.sum(field*np.exp(-1j*k0*n*x))/L)
     B1 = 1j*k0*np.diag(np.arange(-N, N+1))
-    B2 = toeplitz(np.append(C[N:], np.zeros(N)), np.append(np.flip(C[:N+1],0), np.zeros(N)))
-    M = np.concatenate((np.concatenate((-B1,B2), axis=1), np.concatenate((B2.conj().T,B1), axis=1)), axis=0) 
+    B2 = toeplitz(np.append(C[N:], np.zeros(N)), np.append(np.flip(C[:N+1], 0), np.zeros(N)))
+    M = np.concatenate((np.concatenate((-B1, B2), axis=1), np.concatenate((B2.conj().T, B1), axis=1)), axis=0)
     return eigvals(-1j*M)
-    
 
 
 def IST(field, dT, Peroidized=2):
     coords = []
+
     def onclick(event):
         ix, iy = event.xdata, event.ydata
-        print 'x = %d, y = %d'%(ix, iy)
+        print 'x = %d, y = %d' % (ix, iy)
     
         coords.append((ix, iy))
-        if np.size(coords,0) == 2:
+        if np.size(coords, 0) == 2:
             f.canvas.mpl_disconnect(cid)
             if coords[0][0] < coords[1][0]:
                 st = int(np.floor(coords[0][0]))
@@ -210,9 +211,9 @@ def IST(field, dT, Peroidized=2):
             elif coords[0][0] > coords[1][0]:
                 sp = int(np.floor(coords[0][0]))
                 st = int(np.floor(coords[1][0]))
-            ax.plot(np.arange(st,sp),abs(field[st:sp])**2,'r')
+            ax.plot(np.arange(st, sp), abs(field[st:sp])**2, 'r')
             axIST = f.add_subplot(212)
-            ev = ISTcompute(field[st:sp],dT)
+            ev = ISTcompute(field[st:sp], dT)
             axIST.plot(ev.real, ev.imag, 'r.')  
             plt.show()
         
@@ -227,10 +228,10 @@ def IST(field, dT, Peroidized=2):
     plt.xlim(0, len(field))
     cid = f.canvas.mpl_connect('button_press_event', onclick)
 
+
 def gaussian(x, mu=0, sig=5):
     return np.exp(-np.power(x - mu, 2.)/(2 * np.power(sig, 2.)))
 
-    
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
