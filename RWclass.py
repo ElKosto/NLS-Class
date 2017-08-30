@@ -191,11 +191,11 @@ def ISTcompute(field,dT):
     B1 = 1j*k0*np.diag(np.arange(-N, N+1))
     B2 = toeplitz(np.append(C[N:], np.zeros(N)), np.append(np.flip(C[:N+1],0), np.zeros(N)))
     M = np.concatenate((np.concatenate((-B1,B2), axis=1), np.concatenate((B2.conj().T,B1), axis=1)), axis=0) 
-    return eigvals(M)
+    return eigvals(-1j*M)
     
 
 
-def IST(field, dT, Peroidized=250):
+def IST(field, dT, Peroidized=2):
     coords = []
     def onclick(event):
         ix, iy = event.xdata, event.ydata
@@ -212,8 +212,8 @@ def IST(field, dT, Peroidized=250):
                 st = int(np.floor(coords[1][0]))
             ax.plot(np.arange(st,sp),abs(field[st:sp])**2,'r')
             axIST = f.add_subplot(212)
-            ev = ISTcompute(field,dT)
-            axIST.plot(ev.imag, ev.real, 'r.')  
+            ev = ISTcompute(field[st:sp],dT)
+            axIST.plot(ev.real, ev.imag, 'r.')  
             plt.show()
         
     f = plt.figure()
@@ -227,16 +227,17 @@ def IST(field, dT, Peroidized=250):
     plt.xlim(0, len(field))
     cid = f.canvas.mpl_connect('button_press_event', onclick)
 
-
+def gaussian(x, mu=0, sig=5):
+    return np.exp(-np.power(x - mu, 2.)/(2 * np.power(sig, 2.)))
 
     
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
 #%%
-a = RandomWave(0.1,1.)
-
-IST(a.Sig,a.TimeStep)
+a = Stand_Func('sech', dT=0.1, NofP=5e2)
+IST(a.Sig, a.TimeStep)
+#IST(a.Propagate_SSFM(1.01,betta2=-1,gamma=10.),a.TimeStep)
 
 #Dist = 0.4
 #plt.suptitle('Prop dist:'+str(Dist)+'km')
@@ -244,8 +245,7 @@ IST(a.Sig,a.TimeStep)
 #plt.plot(np.arange(0,a.Span,a.TmeStep),abs(a.Propagate_SAM(Dist,betta2=-20,gamma=2.4,param='map')[-2,:])**2)
 #plt.plot(np.arange(0,a.Span,a.TmeStep),abs(a.Propagate_SSFM(Dist,betta2=-20,gamma=2.4))**2)
 #%%
-#def gaussian(x, mu=0, sig=5):
-#    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
 #
 #a = Stand_Func(gaussian)
 #a.PlotSig()
