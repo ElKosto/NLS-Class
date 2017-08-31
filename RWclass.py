@@ -194,14 +194,19 @@ def ISTcompute(field, dT):
     M = np.concatenate((np.concatenate((-B1, B2), axis=1), np.concatenate((B2.conj().T, B1), axis=1)), axis=0)
     return eigvals(-1j*M)
 
+def periodize(dat, period, delay=0):
+    loc = dat
+    for ii in np.arange(period):
+        dat = np.append(dat,loc)
+    return dat
 
-def IST(field, dT, Peroidized=2):
+def IST(field, dT, periodized=0): return ISTcompute(periodize(field, periodized), dT)
+    
+def IST_graf(field, dT, periodized=0):
     coords = []
-
     def onclick(event):
         ix, iy = event.xdata, event.ydata
         print 'x = %d, y = %d' % (ix, iy)
-    
         coords.append((ix, iy))
         if np.size(coords, 0) == 2:
             f.canvas.mpl_disconnect(cid)
@@ -212,23 +217,27 @@ def IST(field, dT, Peroidized=2):
                 sp = int(np.floor(coords[0][0]))
                 st = int(np.floor(coords[1][0]))
             ax.plot(np.arange(st, sp), abs(field[st:sp])**2, 'r')
-            axIST = f.add_subplot(212)
-            ev = ISTcompute(field[st:sp], dT)
-            axIST.plot(ev.real, ev.imag, 'r.')  
+            
+            ev = ISTcompute(periodize(field[st:sp], periodized), dT)
+            axIST = plt.subplot2grid((2, 2), (0, 1), rowspan=2)            
+            axIST.plot(ev.real, ev.imag, 'r.')
+            
+            axPer = plt.subplot2grid((2, 2), (1, 0))
+            axPer.plot(abs(periodize(field[st:sp], periodized))**2,'g')
             plt.show()
-        
     f = plt.figure()
-    ax = f.add_subplot(211)
+    ax = plt.subplot2grid((2, 2), (0, 0))
     plt.suptitle('Choose the working area', fontsize=20)
-    f.set_size_inches(8,6)
+    f.set_size_inches(10,6)
     ax.plot(abs(field)**2,'b')
     ax.set_xlabel('Number of point')
     ax.set_ylabel('Power (W)')
     plt.ylim(0, max(abs(field)**2)+0.1)
     plt.xlim(0, len(field))
     cid = f.canvas.mpl_connect('button_press_event', onclick)
-
-
+"""
+here is a set of useful standard functions
+"""
 def gaussian(x, mu=0, sig=5):
     return np.exp(-np.power(x - mu, 2.)/(2 * np.power(sig, 2.)))
 
@@ -237,21 +246,11 @@ also good to do things for the wave shaper! line the method wgich could show the
 """
 #%%
 a = Stand_Func('sech', dT=0.1, NofP=5e2)
-IST(a.Sig, a.TimeStep)
-#IST(a.Propagate_SSFM(1.01,betta2=-1,gamma=10.),a.TimeStep)
-
-#Dist = 0.4
-#plt.suptitle('Prop dist:'+str(Dist)+'km')
-#plt.plot(np.arange(0,a.Span,a.TmeStep),abs(a.Sig)**2)
-#plt.plot(np.arange(0,a.Span,a.TmeStep),abs(a.Propagate_SAM(Dist,betta2=-20,gamma=2.4,param='map')[-2,:])**2)
-#plt.plot(np.arange(0,a.Span,a.TmeStep),abs(a.Propagate_SSFM(Dist,betta2=-20,gamma=2.4))**2)
+ff = IST(a.Sig, a.TimeStep)
+plt.figure()
+plt.plot(ff.real,ff.imag,'.')
 #%%
 
-#
-#a = Stand_Func(gaussian)
-#a.PlotSig()
-#plt.figure()
-#plt.plot(np.arange(0,a.Span,a.TmeStep),abs(a.Propagate_SSFM(0.2))**2,np.arange(0,a.Span,a.TmeStep),abs(a.Sig)**2)
 
 
 
@@ -265,7 +264,13 @@ IST(a.Sig, a.TimeStep)
 
 
 
-    
-    
+
+
+
+
+
+
+
+
     
     
