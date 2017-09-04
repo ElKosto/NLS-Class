@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import complex_ode
 from scipy.linalg import toeplitz, eigvals
+import matplotlib.animation as animation
 
 plt.rc('text', usetex=True)
 
@@ -238,26 +239,26 @@ def IST_graf(field, dT, periodized=0):
 """
 here is a set of useful standard functions
 """
-def gaussian(x, mu=0, sig=5):
-    return np.exp(-np.power(x - mu, 2.)/(2 * np.power(sig, 2.)))
-
+def SuperGauss(x, p=2, x0=0, sigma=1, a=10) : return a*np.exp(-1*np.power((x-x0)**2/(2*sigma**2),p))
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
-a = RandomWave(0.1,4, NofP=1000, dT=0.1,Offset=0)
-#%%
 
-ff = IST(a.Sig+100, a.TimeStep)
-plt.figure()
-plt.plot(ff.real,ff.imag,'.')
 #%%
-dsw = RandomWave(0.1,4, NofP=1000, dT=0.05,Offset=0)
+#a = RandomWave(0.1,4, NofP=1000, dT=0.1,Offset=0)
+#ff = IST(a.Sig+100, a.TimeStep)
+#plt.figure()
+#plt.plot(ff.real,ff.imag,'.')
+#%%
+dsw = Stand_Func(SuperGauss, NofP=1e3, dT=0.05)
 plt.figure()
-plt.pcolor(abs(dsw.Propagate_SSFM(.5,20,1.3,param='map'))**2,cmap=plt.get_cmap('coolwarm'))
+plt.pcolor(abs(dsw.Propagate_SSFM(.1,20,1.3,param='map'))**2,cmap=plt.get_cmap('coolwarm'))
+#plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
 dsw.PlotSig()
 #%%
-
-
+#TT = np.arange(-10,10,0.10)
+#plt.figure()
+#plt.plot(TT,)
 
 
 
