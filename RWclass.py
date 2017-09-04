@@ -43,10 +43,12 @@ class Efield:
         ax[1].set_xlabel('Freq (THz)',color='g')
         ax[1].set_ylabel('Power Spectr. Density', color='r')
                 
-    def Propagate_SSFM(self, L, betta2=-1,gamma=1, dz=1e-3, param='fin_res'):
+    def Propagate_SSFM(self, L, betta2=-1,gamma=1, dz=1e-3, param='fin_res', Movie=False):
         """Propagate Using the split step fourier method"""
         uf = self.Sig
         freq = np.fft.fftfreq(len(self.Sig), d=self.TimeStep)
+        if Movie:
+
         for ii in np.arange(np.round(L/dz)):
             ii = int(ii)
             # map array
@@ -63,6 +65,17 @@ class Efield:
             fftu = np.fft.fft(uf)*np.exp(1j*np.power(np.pi*freq, 2)*betta2*dz)
             # go back
             uf = np.fft.ifft(fftu)
+            def animate(i):
+                x = np.linspace(0, 2, 1000)
+                y = np.sin(2 * np.pi * (x - 0.01 * i))
+                line.set_data(x, y)
+                return line,
+            if Movie:
+                if ii==0:
+                    fig = plt.figure()
+                else:
+                    ax = plt.axes(xlim=(0, 2), ylim=(-2, 2))
+                    line, = ax.plot([], [], lw=2)
         if param == 'map':
             return maping
         elif param == 'fin_res':
@@ -114,7 +127,7 @@ class RandomWave(Efield):
         self.Span = NofP*dT
         self.TimeStep = dT
         Rf = np.fft.ifft(np.exp(-1*(np.fft.fftfreq(int(NofP),d=dT))**2/4/((dNu/2)**2/2/np.log(2)))*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi))
-        # Above 4 is for the sqrt of int        
+        # Above 4 is for the sqrt of intensity        
         A = np.abs(Rf)
         A = np.sqrt(Pavg)*A/np.mean(A) + Offset 
         Ph = np.angle(Rf)
@@ -252,9 +265,9 @@ also good to do things for the wave shaper! line the method wgich could show the
 #%%
 dsw = Stand_Func(SuperGauss, NofP=1e3, dT=0.05)
 plt.figure()
-plt.pcolor(abs(dsw.Propagate_SSFM(.1,20,1.3,param='map'))**2,cmap=plt.get_cmap('coolwarm'))
+plt.pcolor(abs(dsw.Propagate_SSFM(.1,20,1.3,param='map', Movie=True))**2,cmap=plt.get_cmap('coolwarm'))
 #plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
-dsw.PlotSig()
+#dsw.PlotSig()
 #%%
 #TT = np.arange(-10,10,0.10)
 #plt.figure()
