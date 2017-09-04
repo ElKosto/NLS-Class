@@ -107,7 +107,7 @@ class RandomWave(Efield):
         The output self.Sig is a complex field
         Pet.__init__(self, name, "Dog")
     """
-    def __init__(self, dNu, Pavg, NofP=1e4, dT=0.05):
+    def __init__(self, dNu, Pavg, Offset=0, NofP=1e4, dT=0.05):
         self.SpWidth = dNu
         self.AvgPower = Pavg
         self.Span = NofP*dT
@@ -115,7 +115,7 @@ class RandomWave(Efield):
         Rf = np.fft.ifft(np.exp(-1*(np.fft.fftfreq(int(NofP),d=dT))**2/4/((dNu/2)**2/2/np.log(2)))*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi))
         # Above 4 is for the sqrt of int        
         A = np.abs(Rf)
-        A = np.sqrt(Pavg)*A/np.mean(A)        
+        A = np.sqrt(Pavg)*A/np.mean(A) + Offset 
         Ph = np.angle(Rf)
         self.Sig = A*np.exp(1j*Ph)
         
@@ -244,13 +244,18 @@ def gaussian(x, mu=0, sig=5):
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
+a = RandomWave(0.1,4, NofP=1000, dT=0.1,Offset=0)
 #%%
-a = Stand_Func('sech', dT=0.1, NofP=5e2)
-ff = IST(a.Sig, a.TimeStep)
+
+ff = IST(a.Sig+100, a.TimeStep)
 plt.figure()
 plt.plot(ff.real,ff.imag,'.')
 #%%
-
+dsw = RandomWave(0.1,4, NofP=1000, dT=0.05,Offset=0)
+plt.figure()
+plt.pcolor(abs(dsw.Propagate_SSFM(.5,20,1.3,param='map'))**2,cmap=plt.get_cmap('coolwarm'))
+dsw.PlotSig()
+#%%
 
 
 
