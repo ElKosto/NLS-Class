@@ -48,7 +48,7 @@ class Efield:
         uf = self.Sig
         freq = np.fft.fftfreq(len(self.Sig), d=self.TimeStep)
         if Movie:
-
+            Movie = 0
         for ii in np.arange(np.round(L/dz)):
             ii = int(ii)
             # map array
@@ -258,14 +258,16 @@ also good to do things for the wave shaper! line the method wgich could show the
 """
 
 #%%
-#a = RandomWave(0.1,4, NofP=1000, dT=0.1,Offset=0)
-#ff = IST(a.Sig+100, a.TimeStep)
-#plt.figure()
-#plt.plot(ff.real,ff.imag,'.')
-#%%
-dsw = Stand_Func(SuperGauss, NofP=1e3, dT=0.05)
+a = RandomWave(0.1,4, NofP=1000, dT=0.1,Offset=0)
+ff = IST(a.Sig+100, a.TimeStep)
 plt.figure()
-plt.pcolor(abs(dsw.Propagate_SSFM(.1,20,1.3,param='map', Movie=True))**2,cmap=plt.get_cmap('coolwarm'))
+plt.plot(ff.real,ff.imag,'.')
+#%%
+T = np.arange(-10,10,0.05)
+dsw = Efield(5-5/np.cosh(T), dT=0.05)
+plt.figure()
+plt.pcolor(abs(dsw.Propagate_SSFM(.5,1,5,param='map', Movie=0))**2,cmap=plt.get_cmap('coolwarm'))
+plt.colorbar()
 #plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
 #dsw.PlotSig()
 #%%
