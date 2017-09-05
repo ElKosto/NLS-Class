@@ -43,12 +43,10 @@ class Efield:
         ax[1].set_xlabel('Freq (THz)',color='g')
         ax[1].set_ylabel('Power Spectr. Density', color='r')
                 
-    def Propagate_SSFM(self, L, betta2=-1,gamma=1, dz=1e-3, param='fin_res', Movie=False):
+    def Propagate_SSFM(self, L, betta2=-1,gamma=1, dz=1e-3, param='fin_res', movie=False, plotmap=False):
         """Propagate Using the split step fourier method"""
         uf = self.Sig
         freq = np.fft.fftfreq(len(self.Sig), d=self.TimeStep)
-        if Movie:
-            Movie = 0
         for ii in np.arange(np.round(L/dz)):
             ii = int(ii)
             # map array
@@ -65,17 +63,6 @@ class Efield:
             fftu = np.fft.fft(uf)*np.exp(1j*np.power(np.pi*freq, 2)*betta2*dz)
             # go back
             uf = np.fft.ifft(fftu)
-            def animate(i):
-                x = np.linspace(0, 2, 1000)
-                y = np.sin(2 * np.pi * (x - 0.01 * i))
-                line.set_data(x, y)
-                return line,
-            if Movie:
-                if ii==0:
-                    fig = plt.figure()
-                else:
-                    ax = plt.axes(xlim=(0, 2), ylim=(-2, 2))
-                    line, = ax.plot([], [], lw=2)
         if param == 'map':
             return maping
         elif param == 'fin_res':
@@ -214,7 +201,15 @@ def periodize(dat, period, delay=0):
         dat = np.append(dat,loc)
     return dat
 
-def IST(field, dT, periodized=0): return ISTcompute(periodize(field, periodized), dT)
+def IST(field, dT, periodized=0):     
+
+    def periodize(dat, period, delay=0):
+        loc = dat
+        for ii in np.arange(period):
+            dat = np.append(dat,loc)
+        return dat        
+
+    return ISTcompute(periodize(field, periodized), dT)
     
 def IST_graf(field, dT, periodized=0):
     coords = []
@@ -249,6 +244,35 @@ def IST_graf(field, dT, periodized=0):
     plt.ylim(0, max(abs(field)**2)+0.1)
     plt.xlim(0, len(field))
     cid = f.canvas.mpl_connect('button_press_event', onclick)
+    
+    
+def Plot_Map(map_data,dt,dz):
+    coords = []
+    def onclick(event):
+        ix, iy = event.xdata, event.ydata
+        print 'x = %d, y = %d' % (ix, iy)
+        coords.append((ix, iy))
+        x = int(np.floor(ix/dz))
+        ax.lines.remove(0)
+        ax.plot([ix,ix], [0, dt*np.size(map_data,1)],'g')
+        
+        ax2 = plt.subplot2grid((4, 1), (2, 0))            
+        ax2.plot(abs(map_data[x,:])**2, 'r')
+        
+        ax3 = plt.subplot2grid((4, 1), (3, 0))
+        ax3.plot(np.angle(map_data[x,:]),'b')
+        plt.show()
+        
+    f = plt.figure()
+    ax = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
+    plt.suptitle('Choose the coordinate', fontsize=20)
+    f.set_size_inches(10,6)
+    Z,T = np.meshgrid( np.arange(0,dz*np.size(map_data,0),dz), np.arange(0, dt*np.size(map_data,1),dt))
+    ax.pcolor(Z, T, abs(np.transpose(map_data))**2, cmap=plt.get_cmap('coolwarm'))
+    ax.plot([0, 0], [0, dt*np.size(map_data,1)-dt], 'g')
+    ax.set_xlabel('Distance (km)')
+    ax.set_ylabel('Time (ps)')
+    cid = f.canvas.mpl_connect('button_press_event', onclick)
 """
 here is a set of useful standard functions
 """
@@ -258,16 +282,16 @@ also good to do things for the wave shaper! line the method wgich could show the
 """
 
 #%%
-a = RandomWave(0.1,4, NofP=1000, dT=0.1,Offset=0)
-ff = IST(a.Sig+100, a.TimeStep)
-plt.figure()
-plt.plot(ff.real,ff.imag,'.')
+#a = RandomWave(0.1,4, NofP=2000, dT=0.05,Offset=0)
+#ff = IST_graf(a.Propagate_SSFM(0.5), a.TimeStep, periodized=2)
+#plt.figure()
+#plt.plot(ff.real,ff.imag,'r.')
 #%%
-T = np.arange(-10,10,0.05)
-dsw = Efield(5-5/np.cosh(T), dT=0.05)
-plt.figure()
-plt.pcolor(abs(dsw.Propagate_SSFM(.5,1,5,param='map', Movie=0))**2,cmap=plt.get_cmap('coolwarm'))
-plt.colorbar()
+#T = np.arange(-10,10,0.05)
+#dsw = Efield(5-5/np.cosh(T), dT=0.05)
+#plt.figure()
+#plt.pcolor(abs(dsw.Propagate_SSFM(.5,1,5,param='map', Movie=0))**2,cmap=plt.get_cmap('coolwarm'))
+#plt.colorbar()
 #plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
 #dsw.PlotSig()
 #%%
@@ -275,6 +299,11 @@ plt.colorbar()
 #plt.figure()
 #plt.plot(TT,)
 
+a = RandomWave(0.1,4, NofP=2000, dT=0.05,Offset=0)
+#%% test map
+
+Plot_Map(a.Propagate_SAM(0.3,betta2=-20,gamma=1.3,dz=0.01,param='map'), a.TimeStep, 0.01)
+#%%
 
 
 
