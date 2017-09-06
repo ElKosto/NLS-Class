@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import complex_ode
 from scipy.linalg import toeplitz, eigvals
-import matplotlib.animation as animation
+#import matplotlib.animation as animation
+import matplotlib.ticker as ticker
 
 plt.rc('text', usetex=True)
 
@@ -51,7 +52,7 @@ class Efield:
             ii = int(ii)
             # map array
             if param == 'map' and ii == 0:
-                maping = np.zeros((int(np.round(L/dz+1)), len(self.Sig)))
+                maping = np.zeros((int(np.round(L/dz)), len(self.Sig)))
                 maping[0] = self.Sig
             elif param == 'map' and ii > 0:
                 maping[ii] = uf
@@ -247,42 +248,58 @@ def IST_graf(field, dT, periodized=0):
     
     
 def Plot_Map(map_data,dt,dz):
-    coords = []
+
     def onclick(event):
         ix, iy = event.xdata, event.ydata
-        print 'x = %d, y = %d' % (ix, iy)
-        coords.append((ix, iy))
         x = int(np.floor(ix/dz))
-        ax.lines.remove(0)
-        ax.plot([ix,ix], [0, dt*np.size(map_data,1)],'g')
-        
+        plt.suptitle('Chosen distance z = %f km'%ix, fontsize=20)
+        ax.lines.pop(0)
+        ax.plot([ix,ix], [0, dt*np.size(map_data,1)],'r')
+
         ax2 = plt.subplot2grid((4, 1), (2, 0))            
-        ax2.plot(abs(map_data[x,:])**2, 'r')
-        
+        ax2.plot(np.arange(0,dt*np.size(map_data,1),dt), abs(map_data[x,:])**2, 'r')
+        ax2.set_ylabel('Power (W)')
+        ax2.set_xlim(0, dt*np.size(map_data,1))        
         ax3 = plt.subplot2grid((4, 1), (3, 0))
-        ax3.plot(np.angle(map_data[x,:]),'b')
+        ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.angle(map_data[x,:])/(np.pi),'b')
+        ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.unwrap(np.angle(map_data[x,:]))/(np.pi),'g')
+        ax3.set_xlabel('Time (ps)')
+        ax3.set_ylabel('Phase (rad)')
+        ax3.set_xlim(0, dt*np.size(map_data,1))
+        ax3.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
+        ax3.yaxis.set_major_formatter(ticker.FormatStrFormatter('%g $\pi$'))
+        ax3.grid(True)
+        
         plt.show()
         
     f = plt.figure()
     ax = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
     plt.suptitle('Choose the coordinate', fontsize=20)
-    f.set_size_inches(10,6)
+    f.set_size_inches(10,8)
     Z,T = np.meshgrid( np.arange(0,dz*np.size(map_data,0),dz), np.arange(0, dt*np.size(map_data,1),dt))
-    ax.pcolor(Z, T, abs(np.transpose(map_data))**2, cmap=plt.get_cmap('coolwarm'))
-    ax.plot([0, 0], [0, dt*np.size(map_data,1)-dt], 'g')
+    pc = ax.pcolor(Z, T, abs(np.transpose(map_data))**2, cmap=plt.get_cmap('viridis'))
+    ax.plot([0, 0], [0, dt*np.size(map_data,1)-dt], 'r')
     ax.set_xlabel('Distance (km)')
     ax.set_ylabel('Time (ps)')
-    cid = f.canvas.mpl_connect('button_press_event', onclick)
+    ax.set_ylim(0, dt*np.size(map_data,1))
+    ax.set_xlim(0, dz*np.size(map_data,0)-5*dz)
+#    f.colorbar(pc)
+    plt.subplots_adjust(left=0.07, bottom=0.07, right=0.95, top=0.93, wspace=None, hspace=0.4)
+    f.canvas.mpl_connect('button_press_event', onclick)
 """
 here is a set of useful standard functions
 """
-def SuperGauss(x, p=2, x0=0, sigma=1, a=10) : return a*np.exp(-1*np.power((x-x0)**2/(2*sigma**2),p))
+def SuperGauss(x, p=3, x0=0, sigma=3, a=1) : return a*np.exp(-1*np.power((x-x0)**2/(2*sigma**2),p))
+    
+def Sech(x,a=1.,x0=0,t=1.) : return a/np.cosh(x/t-x0)
+
+def SolitonNLS(x,Pm=1., x0=0, gamma=1., betta2=-1) : return Pm/np.cosh(x*np.sqrt(gamma*Pm/abs(betta2))-x0)
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
 
 #%%
-#a = RandomWave(0.1,4, NofP=2000, dT=0.05,Offset=0)
+a = RandomWave(0.1, 3., NofP=1024, dT=0.08, Offset=0)
 #ff = IST_graf(a.Propagate_SSFM(0.5), a.TimeStep, periodized=2)
 #plt.figure()
 #plt.plot(ff.real,ff.imag,'r.')
@@ -295,14 +312,19 @@ also good to do things for the wave shaper! line the method wgich could show the
 #plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
 #dsw.PlotSig()
 #%%
-#TT = np.arange(-10,10,0.10)
+#
 #plt.figure()
 #plt.plot(TT,)
-
-a = RandomWave(0.1,4, NofP=2000, dT=0.05,Offset=0)
+#TT = np.arange(-50,50, 0.1)
+#dat =  SolitonNLS(TT, betta2=-20,gamma=2,Pm=1.)
+#a = Efield(dat, dT=.1)
+#a.PlotSig()
 #%% test map
-
-Plot_Map(a.Propagate_SAM(0.3,betta2=-20,gamma=1.3,dz=0.01,param='map'), a.TimeStep, 0.01)
+dZ = 0.005
+M = a.Propagate_SAM(0.9, betta2=20., gamma=2.6, dz=dZ, param='map')
+Plot_Map(M, a.TimeStep, dZ)
+#%%
+#IST_graf(M[int(np.floor(0./dZ)),:], a.TimeStep, periodized=0)
 #%%
 
 
