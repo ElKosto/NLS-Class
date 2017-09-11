@@ -28,6 +28,9 @@ class Efield:
         assert isinstance(CompField, object)
         self.Span = dT*len(CompField)
 
+    def SaveTxt(self, FullName):
+        np.savetxt(FullName, np.transpose((np.real(self.Sig), np.imag(self.Sig))))
+        
     def PlotSig(self):
         def cm(x, y): return np.sum(x*y)/np.sum(y)  # Center Of Mass
 
@@ -184,6 +187,8 @@ class Stand_Func(Efield):
 def ISTcompute(field, dT):
     # Fourier collocation method for the Z-S eigenvalue problem
     Nx = len(field)
+#    if Nx%2:
+#        field = np.append(field,field[-1])
     N = Nx/2
     L = dT*Nx
     k0 = 2*np.pi/L
@@ -294,24 +299,36 @@ def SuperGauss(x, p=3, x0=0, sigma=3, a=1) : return a*np.exp(-1*np.power((x-x0)*
 def Sech(x,a=1.,x0=0,t=1.) : return a/np.cosh(x/t-x0)
 
 def SolitonNLS(x,Pm=1., x0=0, gamma=1., betta2=-1) : return Pm/np.cosh(x*np.sqrt(gamma*Pm/abs(betta2))-x0)
+    
+def KMsoliton (t, x, a):
+    for ii in x:
+        b = (8*a*(1-2*a))**.5
+        theta = a**2*b*np.sqrt(2-b**2)*t
+    return ((2*b**2*np.cosh(theta) + 2*1j*b*np.sqrt(2-b**2)*np.sinh(theta))/
+    (2*np.cosh(theta) + 2**.5*np.sqrt(2-b**2)*np.cos(a*b*x)) - 1)*a*np.exp(1j*a**2*t)
+
+def KMsr (t, x, phi):
+    Om = 2*np.sinh(2*phi)
+    q = 2*np.sinh(2*phi)
+    return (np.cos(Om*t-2*1j*phi)-np.cosh(phi)*np.cosh(q*x))/(np.cos(Om*t)-np.cosh(phi)*np.cosh(q*x))*np.exp(2*1j*t)
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
 
 #%%
-a = RandomWave(0.1, 3., NofP=1024, dT=0.08, Offset=0)
-#ff = IST_graf(a.Propagate_SSFM(0.5), a.TimeStep, periodized=2)
-#plt.figure()
-#plt.plot(ff.real,ff.imag,'r.')
-#%%
-#T = np.arange(-10,10,0.05)
-#dsw = Efield(5-5/np.cosh(T), dT=0.05)
-#plt.figure()
-#plt.pcolor(abs(dsw.Propagate_SSFM(.5,1,5,param='map', Movie=0))**2,cmap=plt.get_cmap('coolwarm'))
-#plt.colorbar()
-#plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
-#dsw.PlotSig()
-#%%
+#a = RandomWave(0.05, 4.5, NofP=2048, dT=0.08, Offset=0)
+##ff = IST_graf(a.Propagate_SSFM(0.5), a.TimeStep, periodized=2)
+##plt.figure()
+##plt.plot(ff.real,ff.imag,'r.')
+##%%
+##T = np.arange(-10,10,0.05)
+##dsw = Efield(5-5/np.cosh(T), dT=0.05)
+##plt.figure()
+##plt.pcolor(abs(dsw.Propagate_SSFM(.5,1,5,param='map', Movie=0))**2,cmap=plt.get_cmap('coolwarm'))
+##plt.colorbar()
+##plt.plot(dsw.Propagate_SSFM(0.1,20,1.3,))
+##dsw.PlotSig()
+##%%
 #
 #plt.figure()
 #plt.plot(TT,)
@@ -320,12 +337,45 @@ a = RandomWave(0.1, 3., NofP=1024, dT=0.08, Offset=0)
 #a = Efield(dat, dT=.1)
 #a.PlotSig()
 #%% test map
-dZ = 0.005
-M = a.Propagate_SAM(0.9, betta2=20., gamma=2.6, dz=dZ, param='map')
-Plot_Map(M, a.TimeStep, dZ)
-#%%
+#dZ = 0.01
+#M = a.Propagate_SAM(0.9, betta2=20., gamma=3., dz=dZ, param='map')
+#Plot_Map(M, a.TimeStep, dZ)
+##%%
 #IST_graf(M[int(np.floor(0./dZ)),:], a.TimeStep, periodized=0)
-#%%
+#%% breather try
+#xx = np.arange(-300,300,0.2)
+#yy = np.arange(-100,100,0.4)
+#a = 0.4999
+#M = KMsoliton(yy,yy,a)
+#plt.figure()
+##plt.plot(abs(M[2500:2730])**2)
+#plt.pcolor(M)
+##%%
+#ff = IST(M[2500:2730], 0.2, periodized=10)
+#plt.figure()
+#plt.plot(np.real(ff), np.imag(ff),'r.')
+#%% propagation tests 
+#TT = np.arange(-50,50, 0.1)
+#dZ = 0.01
+#dat =  SolitonNLS(TT, betta2=-20,gamma=2,Pm=1.)
+#a = Efield(dat, dT=.1)
+##a.PlotSig() 
+#ee = a.Propagate_SAM(0.5, betta2=-20., gamma=30., dz=dZ, param='map')
+#Plot_Map(ee, a.TimeStep, dZ)
+#b = Efield(ee[int(np.floor(0.117/dZ)),:], dT=.1)
+##%%
+#b.PlotSig()
+#ee = b.Propagate_SAM(-0.5, betta2=-20., gamma=30., dz=-dZ, param='map')
+#Plot_Map(ee, b.TimeStep, dZ)
+#%% ist check km 
+#
+#tt = np.arange(-5,5,0.01)
+#M = KMsr(0,tt,np.arccosh(2))
+#km = Efield(M,0.02)
+##km.PlotSig()
+#ff = IST(M[100:900], 0.01, periodized=1)
+#plt.figure()
+#plt.plot(np.real(ff), np.imag(ff),'r.')
 
 
 
