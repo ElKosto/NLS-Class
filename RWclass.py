@@ -110,7 +110,6 @@ class RandomWave(Efield):
     """
         The ranom wave has the power! spectral width dNu
         The output self.Sig is a complex field
-        Pet.__init__(self, name, "Dog")
     """
     def __init__(self, dNu, Pavg, Offset=0, NofP=1e4, dT=0.05):
         self.SpWidth = dNu
@@ -267,7 +266,8 @@ def Plot_Map(map_data,dt,dz):
         ax2.set_xlim(0, dt*np.size(map_data,1))        
         ax3 = plt.subplot2grid((4, 1), (3, 0))
         ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.angle(map_data[x,:])/(np.pi),'b')
-        ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.unwrap(np.angle(map_data[x,:]))/(np.pi),'g')
+        if max( np.unwrap(np.angle(map_data[x,:]))/(np.pi)) - min( np.unwrap(np.angle(map_data[x,:]))/(np.pi))<10:
+            ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.unwrap(np.angle(map_data[x,:]))/(np.pi),'g')
         ax3.set_xlabel('Time (ps)')
         ax3.set_ylabel('Phase (rad)')
         ax3.set_xlim(0, dt*np.size(map_data,1))
@@ -376,9 +376,15 @@ also good to do things for the wave shaper! line the method wgich could show the
 #ff = IST(M[100:900], 0.01, periodized=1)
 #plt.figure()
 #plt.plot(np.real(ff), np.imag(ff),'r.')
-
-
-
+#%% one dam
+TT = np.arange(-30,30, 0.1)
+SG = SuperGauss(TT,20, 0, 2, 15)#+SuperGauss(TT, 1, -4, 2, 5)
+sg = Efield(SG,0.1)
+sg.PlotSig()
+dZ=0.005
+M = sg.Propagate_SAM(0.9, betta2=20., gamma=3., dz=dZ, param='map')
+Plot_Map(M, sg.TimeStep, dZ)
+#%% 
 
 
 
