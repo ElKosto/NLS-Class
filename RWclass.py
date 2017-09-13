@@ -186,8 +186,9 @@ class Stand_Func(Efield):
 def ISTcompute(field, dT):
     # Fourier collocation method for the Z-S eigenvalue problem
     Nx = len(field)
-#    if Nx%2:
-#        field = np.append(field,field[-1])
+    if Nx%2:
+        field = np.append(field,field[-1])
+    Nx = len(field)
     N = Nx/2
     L = dT*Nx
     k0 = 2*np.pi/L
@@ -309,8 +310,29 @@ def KMsoliton (t, x, a):
 
 def KMsr (t, x, phi):
     Om = 2*np.sinh(2*phi)
-    q = 2*np.sinh(2*phi)
-    return (np.cos(Om*t-2*1j*phi)-np.cosh(phi)*np.cosh(q*x))/(np.cos(Om*t)-np.cosh(phi)*np.cosh(q*x))*np.exp(2*1j*t)
+    q = 2*np.sinh(phi)
+    ii = 0
+    dat_array = np.zeros([np.size(t),np.size(x)])
+    if np.size(x)>1 and np.size(t)>1:
+        for xx in x:
+            dat_array[:,ii] = (np.cos(Om*t-2*1j*phi)-np.cosh(phi)*np.cosh(q*xx))/(np.cos(Om*t)-np.cosh(phi)*np.cosh(q*xx))*np.exp(2*1j*t) 
+            ii += 1
+        return dat_array
+    else:
+        return (np.cos(Om*t-2*1j*phi)-np.cosh(phi)*np.cosh(q*x))/(np.cos(Om*t)-np.cosh(phi)*np.cosh(q*x))*np.exp(2*1j*t) 
+        
+def ABsr (t, x, phi):
+    Om = 2*np.sin(2*phi)
+    q = 2*np.sin(phi)
+    ii = 0
+    dat_array = np.zeros([np.size(t),np.size(x)])
+    if np.size(x)>1 and np.size(t)>1:
+        for xx in x:
+            dat_array[:,ii] = (np.cosh(Om*t-2*1j*phi)-np.cos(phi)*np.cos(q*xx))/(np.cosh(Om*t)-np.cos(phi)*np.cos(q*xx))*np.exp(2*1j*t) 
+            ii += 1
+        return dat_array
+    else:
+        return (np.cosh(Om*t-2*1j*phi)-np.cos(phi)*np.cos(q*x))/(np.cosh(Om*t)-np.cos(phi)*np.cos(q*x))*np.exp(2*1j*t) 
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
@@ -369,25 +391,26 @@ also good to do things for the wave shaper! line the method wgich could show the
 #Plot_Map(ee, b.TimeStep, dZ)
 #%% ist check km 
 #
-#tt = np.arange(-5,5,0.01)
-#M = KMsr(0,tt,np.arccosh(2))
-#km = Efield(M,0.02)
+#tt = np.arange(-10,10,1./6)
+#
+#M = KMsr(0., tt, 0.5)
+##Plot_Map(M, 0.05, 0.05)
+#km = Efield(M,tt[1]-tt[0])
 ##km.PlotSig()
-#ff = IST(M[100:900], 0.01, periodized=1)
+##%%
+#kmp = IST_graf(M, tt[1]-tt[0], periodized=9)
+#
 #plt.figure()
-#plt.plot(np.real(ff), np.imag(ff),'r.')
+#plt.plot(np.real(kmp), np.imag(kmp),'r.')
 #%% one dam
-TT = np.arange(-30,30, 0.1)
-SG = SuperGauss(TT,20, 0, 2, 15)#+SuperGauss(TT, 1, -4, 2, 5)
-sg = Efield(SG,0.1)
-sg.PlotSig()
-dZ=0.005
-M = sg.Propagate_SAM(0.9, betta2=20., gamma=3., dz=dZ, param='map')
-Plot_Map(M, sg.TimeStep, dZ)
+#TT = np.arange(-50,50, 0.1)
+#SG = SuperGauss(TT,1, 0, 5, 15)*np.exp(-1j*np.exp(TT/20)*100)#+SuperGauss(TT, 1, -4, 2, 5)
+#sg = Efield(SG,0.1)
+#sg.PlotSig()
+#dZ=0.002
+#M = sg.Propagate_SAM(0.3, betta2=20., gamma=3., dz=dZ, param='map')
+#Plot_Map(M, sg.TimeStep, dZ)
 #%% 
-
-
-
 
 
 
