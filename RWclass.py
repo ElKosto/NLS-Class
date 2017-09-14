@@ -118,10 +118,10 @@ class RandomWave(Efield):
         self.TimeStep = dT
         Rf = np.fft.ifft(np.exp(-1*(np.fft.fftfreq(int(NofP),d=dT))**2/4/((dNu/2)**2/2/np.log(2)))*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi))
         # Above 4 is for the sqrt of intensity        
-        A = np.abs(Rf)
-        A = np.sqrt(Pavg)*A/np.mean(A) + Offset 
+        A = np.abs(Rf)**2
+        A = Pavg*A/np.mean(A) + Offset
         Ph = np.angle(Rf)
-        self.Sig = A*np.exp(1j*Ph)
+        self.Sig = np.sqrt(A)*np.exp(1j*Ph)
         
 #    def __call__(self,dNuNEW,PavgNEW,NofP=1e4,dT=0.05):
 #        self.SpWidth = dNuNEW
@@ -391,14 +391,14 @@ also good to do things for the wave shaper! line the method wgich could show the
 #Plot_Map(ee, b.TimeStep, dZ)
 #%% ist check km 
 #
-#tt = np.arange(-10,10,1./6)
+#tt = np.arange(-10,10,1./7)
 #
-#M = KMsr(0., tt, 0.5)
+#M = ABsr(0., tt, np.pi/4)
 ##Plot_Map(M, 0.05, 0.05)
 #km = Efield(M,tt[1]-tt[0])
 ##km.PlotSig()
 ##%%
-#kmp = IST_graf(M, tt[1]-tt[0], periodized=9)
+#kmp = IST_graf(M, tt[1]-tt[0], periodized=20)
 #
 #plt.figure()
 #plt.plot(np.real(kmp), np.imag(kmp),'r.')
