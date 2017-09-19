@@ -74,7 +74,7 @@ class Efield:
         else:
             print 'wrong parameter'
 
-    def Propagate_SAM(self, L, betta2=-1, gamma=1, dz=1e-3, param='fin_res'):
+    def Propagate_SAM(self, L, betta2=-1, gamma=1, dz=1e-3, tol=1e-15, param='fin_res'):
         """Propagate Using the Step Adaptative  Method"""
         def deriv_2(dt, field_in):
         # computes the second-order derivative of field_in
@@ -93,7 +93,7 @@ class Efield:
             dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A
             return dAdz
         
-        r = complex_ode(NLS_1d).set_integrator('vode', method='BDF', atol=1e-15, with_jacobian=False)
+        r = complex_ode(NLS_1d).set_integrator('vode', method='BDF', atol=tol, with_jacobian=False)
         r.set_initial_value(self.Sig, 0)
         sol=np.ndarray(shape=(int(np.round(L/dz)+1), len(self.Sig)), dtype=complex)
         for it in range(0, int(np.round(L/dz))):
@@ -300,13 +300,6 @@ def SuperGauss(x, p=3, x0=0, sigma=3, a=1) : return a*np.exp(-1*np.power((x-x0)*
 def Sech(x,a=1.,x0=0,t=1.) : return a/np.cosh(x/t-x0)
 
 def SolitonNLS(x,Pm=1., x0=0, gamma=1., betta2=-1) : return Pm/np.cosh(x*np.sqrt(gamma*Pm/abs(betta2))-x0)
-    
-def KMsoliton (t, x, a):
-    for ii in x:
-        b = (8*a*(1-2*a))**.5
-        theta = a**2*b*np.sqrt(2-b**2)*t
-    return ((2*b**2*np.cosh(theta) + 2*1j*b*np.sqrt(2-b**2)*np.sinh(theta))/
-    (2*np.cosh(theta) + 2**.5*np.sqrt(2-b**2)*np.cos(a*b*x)) - 1)*a*np.exp(1j*a**2*t)
 
 def KMsr (t, x, phi):
     Om = 2*np.sinh(2*phi)
@@ -404,11 +397,13 @@ also good to do things for the wave shaper! line the method wgich could show the
 #plt.plot(np.real(kmp), np.imag(kmp),'r.')
 #%% one dam
 #TT = np.arange(-50,50, 0.1)
-#SG = SuperGauss(TT,1, 0, 5, 15)*np.exp(-1j*np.exp(TT/20)*100)#+SuperGauss(TT, 1, -4, 2, 5)
+
+#    
+#SG = SuperGauss(TT,10, 0, 10, 1)*np.exp(-1j*np.random.uniform(-1,1,int(len(TT)))*np.pi)#+SuperGauss(TT, 1, -4, 2, 5)
 #sg = Efield(SG,0.1)
 #sg.PlotSig()
 #dZ=0.002
-#M = sg.Propagate_SAM(0.3, betta2=20., gamma=3., dz=dZ, param='map')
+#M = sg.Propagate_SAM(0.3, betta2=-20., gamma=2.4, dz=dZ, param='map')
 #Plot_Map(M, sg.TimeStep, dZ)
 #%% 
 
