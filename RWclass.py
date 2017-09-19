@@ -93,7 +93,7 @@ class Efield:
             dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A
             return dAdz
         
-        r = complex_ode(NLS_1d).set_integrator('vode', method='BDF', atol=tol, with_jacobian=False)
+        r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=tol, with_jacobian=False)
         r.set_initial_value(self.Sig, 0)
         sol=np.ndarray(shape=(int(np.round(L/dz)+1), len(self.Sig)), dtype=complex)
         for it in range(0, int(np.round(L/dz))):
