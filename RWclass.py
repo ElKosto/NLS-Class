@@ -74,7 +74,7 @@ class Efield:
         else:
             print 'wrong parameter'
 
-    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr = 3e-3, dz=1e-3, tol=1e-15, param='fin_res'):
+    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=100, tol=1e-15, param='fin_res'):
         """Propagate Using the Step Adaptative  Method"""
         def deriv_2(dt, field_in):
         # computes the second-order derivative of field_in
@@ -94,17 +94,17 @@ class Efield:
             # print freq
             omega = 2.*np.pi*freq
             # field_fft*=np.exp(1j*0.5*beta2z*omega**2)
-            field_fft *= 1j*omega
+            field_fft *= -1j*omega
             out_field = np.fft.ifft(field_fft)
             return out_field
  
         def NLS_1d(Z, A):
             # time second order derivative
             dAdT2 = deriv_2(self.TimeStep, A)
-            dAAdT = deriv_1(self.TimeStep,A)
+            dAAdT = deriv_1(self.TimeStep,abs(A)**2)
             dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A-1j*gamma*Tr*dAAdT
             return dAdz
-        
+        dz = L/n
         r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=tol, with_jacobian=False)
         r.set_initial_value(self.Sig, 0)
         sol=np.ndarray(shape=(int(np.round(L/dz)+1), len(self.Sig)), dtype=complex)
