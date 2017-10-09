@@ -31,6 +31,9 @@ class Efield:
     def SaveTxt(self, FullName):
         np.savetxt(FullName, np.transpose((np.real(self.Sig), np.imag(self.Sig))))
         
+    def SaveBin(self, FullName):
+        np.save(FullName, self.Sig)   
+         
     def PlotSig(self):
         def cm(x, y): return np.sum(x*y)/np.sum(y)  # Center Of Mass
 
@@ -74,7 +77,7 @@ class Efield:
         else:
             print 'wrong parameter'
 
-    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=100, tol=1e-15, param='fin_res'):
+    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=10, tol=1e-15, param='fin_res'):
         """Propagate Using the Step Adaptative  Method"""
         def deriv_2(dt, field_in):
         # computes the second-order derivative of field_in
@@ -159,7 +162,29 @@ class RandomWave(Efield):
         ax[1].set_xlabel('Freq (THz)', color='g')
         ax[1].set_ylabel('Power Spectr. Density', color='r')
         plt.show()
+
+
+class RandomWaveFromSpec(Efield):
+    """
+    The ranom wave has the power! based on the knowk spectra
+    The output self.Sig is a complex field
+    """
+    def __init__(self, FreqArray, AbsSpecSqr, Pavg, Offset=0, NofP=1e4):
         
+        self.AvgPower = Pavg
+        
+        NewFreq = np.linspace(min(FreqArray), max(FreqArray), NofP)
+        AbsSpecSqrInterp = np.interp(NewFreq, FreqArray, AbsSpecSqr)
+        Rf = np.fft.ifft(np.fft.ifftshift(np.sqrt(AbsSpecSqrInterp)*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi)))
+        A = np.abs(Rf)**2
+        A = Pavg*A/np.mean(A) + Offset
+        Ph = np.angle(Rf)
+        self.Sig = np.sqrt(A)*np.exp(1j*Ph)
+        
+        dT = 1./(NofP*(NewFreq[2]-NewFreq[1]))
+        self.Span = NofP*dT
+        self.TimeStep = dT
+
         
 class Stand_Func(Efield):
     """
@@ -193,6 +218,7 @@ class Stand_Func(Efield):
         ax[1].set_xlim([-1*StDiv(Time,self.Sig)/2,1*StDiv(Time,self.Sig)/2])
         ax[1].set_ylabel('Power Spectr. Density', color='r')
         plt.show()
+
 
 
 def ISTcompute(field, dT):
