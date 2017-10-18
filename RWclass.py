@@ -4,7 +4,7 @@ Created on Thu Jul 27 13:46:51 2017
 
 Try classes!
 
-@author: manip
+@author: tikan
 
 """
 
@@ -27,7 +27,14 @@ class Efield:
         self.AvgPower = np.mean(abs(CompField)**2)
         assert isinstance(CompField, object)
         self.Span = dT*len(CompField)
-
+        
+        
+    def Spectrum (self):
+        fr = np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep)
+        p = np.fft.fft(self.Sig)
+        p = abs(p)**2/np.max(abs(p)**2)       
+        return fr,p
+        
     def SaveTxt(self, FullName):
         np.savetxt(FullName, np.transpose((np.real(self.Sig), np.imag(self.Sig))))
         
@@ -45,8 +52,9 @@ class Efield:
         ax[0].plot(Time, abs(self.Sig)**2, 'r')
         ax[0].set_xlabel('Time (ps)')
         ax[0].set_ylabel('Power (W)')
-        ax[1].plot(np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep),abs(np.fft.fft(self.Sig))**2/np.max(abs(np.fft.fft(self.Sig))**2),'b.')
-        ax[1].set_xlim([-1*StDiv(Time,self.Sig)/2,1*StDiv(Time,self.Sig)/2])
+        fr = np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep)
+        ax[1].plot(fr,abs(np.fft.fft(self.Sig))**2/np.max(abs(np.fft.fft(self.Sig))**2),'b.')
+        ax[1].set_xlim([min(fr),max(fr)])
         ax[1].set_xlabel('Freq (THz)',color='g')
         ax[1].set_ylabel('Power Spectr. Density', color='r')
                 
@@ -77,7 +85,7 @@ class Efield:
         else:
             print 'wrong parameter'
 
-    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=10, tol=1e-15, param='fin_res'):
+    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=30, tol=1e-15, param='fin_res'):
         """Propagate Using the Step Adaptative  Method"""
         def deriv_2(dt, field_in):
         # computes the second-order derivative of field_in
@@ -97,7 +105,7 @@ class Efield:
             # print freq
             omega = 2.*np.pi*freq
             # field_fft*=np.exp(1j*0.5*beta2z*omega**2)
-            field_fft *= -1j*omega
+            field_fft *= 1j*omega
             out_field = np.fft.ifft(field_fft)
             return out_field
  
@@ -171,11 +179,23 @@ class RandomWaveFromSpec(Efield):
     """
     def __init__(self, FreqArray, AbsSpecSqr, Pavg, Offset=0, NofP=1e4):
         
+        def Com(x,y): return np.sum(x*y)/np.sum(y)
+            
         self.AvgPower = Pavg
-        
         NewFreq = np.linspace(min(FreqArray), max(FreqArray), NofP)
         AbsSpecSqrInterp = np.interp(NewFreq, FreqArray, AbsSpecSqr)
-        Rf = np.fft.ifft(np.fft.ifftshift(np.sqrt(AbsSpecSqrInterp)*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi)))
+        
+        indMax = int(np.where(NewFreq>Com(NewFreq,AbsSpecSqrInterp))[0][0])
+        if indMax!= np.round(NofP/2):
+            diff = int(indMax - np.round(NofP/2))
+        if diff>0:
+            AbsSpecSqrInterp = np.concatenate((np.delete(AbsSpecSqrInterp, np.s_[:diff]), np.zeros(diff)), axis=0)
+        else: 
+            diff = abs(diff)
+            AbsSpecSqrInterp = np.concatenate((np.zeros(diff), np.delete(AbsSpecSqrInterp, np.s_[-diff:])), axis=0)
+        NewFreq = NewFreq - NewFreq[indMax]
+        
+        Rf = np.fft.ifft(np.fft.fftshift(np.sqrt(AbsSpecSqrInterp)*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi)))##fft or ifft shift
         A = np.abs(Rf)**2
         A = Pavg*A/np.mean(A) + Offset
         Ph = np.angle(Rf)
@@ -368,18 +388,3 @@ def ABsr (t, x, phi):
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
 """
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
