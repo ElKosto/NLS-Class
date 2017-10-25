@@ -108,13 +108,21 @@ class Efield:
             field_fft *= 1j*omega
             out_field = np.fft.ifft(field_fft)
             return out_field
- 
-        def NLS_1d(Z, A):
-            # time second order derivative
-            dAdT2 = deriv_2(self.TimeStep, A)
-            dAAdT = deriv_1(self.TimeStep,abs(A)**2)
-            dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A-1j*gamma*Tr*dAAdT
-            return dAdz
+        if Tr==0:
+            def NLS_1d(Z, A):
+                # time second order derivative
+                dAdT2 = deriv_2(self.TimeStep, A)
+#                dAAdT = deriv_1(self.TimeStep,abs(A)**2)
+                dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A#-1j*gamma*Tr*dAAdT
+                return dAdz        
+        else:
+            def NLS_1d(Z, A):
+                # time second order derivative
+                dAdT2 = deriv_2(self.TimeStep, A)
+                dAAdT = deriv_1(self.TimeStep,abs(A)**2)
+                dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A-1j*gamma*Tr*dAAdT
+                return dAdz
+
         dz = L/n
         r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=tol, with_jacobian=False)
         r.set_initial_value(self.Sig, 0)
