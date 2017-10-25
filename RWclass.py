@@ -39,7 +39,7 @@ class Efield:
         np.savetxt(FullName, np.transpose((np.real(self.Sig), np.imag(self.Sig))))
         
     def SaveBin(self, FullName):
-        np.save(FullName, self.Sig)   
+        np.save(FullName, zip(np.arange(0, self.Span, self.TimeStep), self.Sig))   
          
     def PlotSig(self):
         def cm(x, y): return np.sum(x*y)/np.sum(y)  # Center Of Mass
@@ -386,5 +386,6 @@ def ABsr (t, x, phi):
         return (np.cosh(Om*t-2*1j*phi)-np.cos(phi)*np.cos(q*x))/(np.cosh(Om*t)-np.cos(phi)*np.cos(q*x))*np.exp(2*1j*t) 
 """
 also good to do things for the wave shaper! line the method wgich could show the dynamics and give the file for ws!
+Think about how to save class and reload it again
 """
 
