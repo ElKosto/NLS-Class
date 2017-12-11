@@ -66,7 +66,7 @@ class Efield:
             ii = int(ii)
             # map array
             if param == 'map' and ii == 0:
-                maping = np.zeros((int(np.round(L/dz)), len(self.Sig)))
+                maping = np.zeros((int(np.round(L/dz)), len(self.Sig)))+1j*np.zeros((int(np.round(L/dz)), len(self.Sig)))
                 maping[0] = self.Sig
             elif param == 'map' and ii > 0:
                 maping[ii] = uf
@@ -85,7 +85,7 @@ class Efield:
         else:
             print 'wrong parameter'
 
-    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=30, tol=1e-15, param='fin_res'):
+    def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=50, abtol=1e-10, reltol=1e-9, param='fin_res'):
         """Propagate Using the Step Adaptative  Method"""
         def deriv_2(dt, field_in):
         # computes the second-order derivative of field_in
@@ -120,11 +120,11 @@ class Efield:
                 # time second order derivative
                 dAdT2 = deriv_2(self.TimeStep, A)
                 dAAdT = deriv_1(self.TimeStep,abs(A)**2)
-                dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A-1j*gamma*Tr*dAAdT
+                dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A-1j*gamma*Tr*dAAdT*A
                 return dAdz
 
         dz = L/n
-        r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=tol, with_jacobian=False)
+        r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=abtol, rtol=reltol, with_jacobian=False)
         r.set_initial_value(self.Sig, 0)
         sol=np.ndarray(shape=(int(np.round(L/dz)+1), len(self.Sig)), dtype=complex)
         for it in range(0, int(np.round(L/dz))):
@@ -349,7 +349,7 @@ def Plot_Map(map_data,dt,dz):
     plt.suptitle('Choose the coordinate', fontsize=20)
     f.set_size_inches(10,8)
     Z,T = np.meshgrid( np.arange(0,dz*np.size(map_data,0),dz), np.arange(0, dt*np.size(map_data,1),dt))
-    pc = ax.pcolor(Z, T, abs(np.transpose(map_data))**2, cmap=plt.get_cmap('viridis'))
+    pc = ax.pcolormesh(Z, T, abs(np.transpose(map_data))**2, cmap=plt.get_cmap('viridis'))
     ax.plot([0, 0], [0, dt*np.size(map_data,1)-dt], 'r')
     ax.set_xlabel('Distance (km)')
     ax.set_ylabel('Time (ps)')
