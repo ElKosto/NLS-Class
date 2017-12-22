@@ -123,11 +123,14 @@ class Efield:
                 dAdz = -1j*betta2/2*dAdT2+1j*gamma*abs(A)**2*A-1j*gamma*Tr*dAAdT*A
                 return dAdz
 
-        dz = L/n
-        r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=abtol, rtol=reltol, with_jacobian=False)
+        dz =float(L)/n
+#        r = complex_ode(NLS_1d).set_integrator('zvode', method='bdf', with_jacobian=False, atol=abtol, rtol=reltol)
+        r = complex_ode(NLS_1d).set_integrator('dopri5', atol=abtol, rtol=reltol)
+#        r = complex_ode(NLS_1d).set_integrator('lsoda', method='BDF', atol=abtol, rtol=reltol, with_jacobian=False)
         r.set_initial_value(self.Sig, 0)
-        sol=np.ndarray(shape=(int(np.round(L/dz)+1), len(self.Sig)), dtype=complex)
-        for it in range(0, int(np.round(L/dz))):
+        sol=np.ndarray(shape=(n+1, len(self.Sig)), dtype=complex)
+        sol[0] = self.Sig
+        for it in range(1, n+1):
             sol[it] = r.integrate(r.t+dz)
         if param == 'map':
             return sol
@@ -392,8 +395,8 @@ def Plot_Map(map_data,dt,dz):
         ax3.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
         ax3.yaxis.set_major_formatter(ticker.FormatStrFormatter('%g $\pi$'))
         ax3.grid(True)
-        
         plt.show()
+        f.canvas.draw()
         
     f = plt.figure()
     ax = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
