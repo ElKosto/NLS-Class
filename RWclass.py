@@ -199,6 +199,8 @@ class RandomWaveFromSpec(Efield):
         indMax = int(np.where(NewFreq>Com(NewFreq,AbsSpecSqrInterp))[0][0])
         if indMax!= np.round(NofP/2):
             diff = int(indMax - np.round(NofP/2))
+        else:
+            diff = 0
         if diff>0:
             AbsSpecSqrInterp = np.concatenate((np.delete(AbsSpecSqrInterp, np.s_[:diff]), np.zeros(diff)), axis=0)
         else: 
@@ -285,7 +287,28 @@ def IST(field, dT, periodized=0):
         return dat        
 
     return ISTcompute(periodize(field, periodized), dT)
+
+def plotEV(MM):
+    col = ['r','g','b','y']
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    # Move left y-axis and bottim x-axis to centre, passing through (0,0)
+    ax.spines['left'].set_position('center')
+    ax.spines['bottom'].set_position('center')
     
+    # Eliminate upper and right axes
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
+    
+    # Show ticks in the left and lower axes only
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    if np.size(np.size(MM)) ==  1:
+        plt.plot(np.real(MM), np.imag(MM), ls='none', alpha=0.2, marker='o',color=col[0])
+    else:
+        for kk in range(np.size(MM,2)):
+            plt.plot(np.real(MM[:,:,kk]), np.imag(MM[:,:,kk]), ls='none', alpha=0.1, marker='o',color=col[kk])    
+            
 def IST_graf(field, dT, periodized=0):
     coords = []
     def onclick(event):
@@ -321,7 +344,7 @@ def IST_graf(field, dT, periodized=0):
     cid = f.canvas.mpl_connect('button_press_event', onclick)
     
     
-def Plot_Map(map_data,dt,dz):
+def Plot_Map(map_data,dt,dz,colormap = 'cubehelix'):
     def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
         '''
         Function to offset the "center" of a colormap. Useful for
@@ -403,9 +426,9 @@ def Plot_Map(map_data,dt,dz):
     plt.suptitle('Choose the coordinate', fontsize=20)
     f.set_size_inches(10,8)
     Z,T = np.meshgrid( np.arange(0,dz*np.size(map_data,0),dz), np.arange(0, dt*np.size(map_data,1),dt))
-    orig_cmap = plt.get_cmap('viridis')
-    shrunk_cmap = shiftedColorMap(orig_cmap, start=0., midpoint=.5, stop=1., name='shrunk')
-    pc = ax.pcolormesh(Z, T, abs(np.transpose(map_data))**2, cmap=shrunk_cmap)
+#    orig_cmap = plt.get_cmap('viridis')
+#    colormap = shiftedColorMap(orig_cmap, start=0., midpoint=.5, stop=1., name='shrunk')
+    pc = ax.pcolormesh(Z, T, abs(np.transpose(map_data))**2, cmap=colormap)
     ax.plot([0, 0], [0, dt*np.size(map_data,1)-dt], 'r')
     ax.set_xlabel('Distance (km)')
     ax.set_ylabel('Time (ps)')
