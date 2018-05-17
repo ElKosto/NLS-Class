@@ -151,11 +151,15 @@ class RandomWave(Efield):
         self.Span = NofP*dT
         self.TimeStep = dT
         Rf = np.fft.ifft(np.exp(-1*(np.fft.fftfreq(int(NofP),d=dT))**2/4/((dNu/2)**2/2/np.log(2)))*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi))
-        # Above 4 is for the sqrt of intensity        
-        A = np.abs(Rf)**2
-        A = Pavg*A/np.mean(A) + Offset
-        Ph = np.angle(Rf)
-        self.Sig = np.sqrt(A)*np.exp(1j*Ph)
+        # Above 4 is for the sqrt of intensity 
+        if Offset == 0:
+            A = np.abs(Rf)**2
+            A = Pavg*A/np.mean(A)
+            Ph = np.angle(Rf)
+            self.Sig = np.sqrt(A)*np.exp(1j*Ph)
+        else:
+            A = Rf*Pavg**.5+Offset
+            self.Sig = A
         
 #    def __call__(self,dNuNEW,PavgNEW,NofP=1e4,dT=0.05):
 #        self.SpWidth = dNuNEW
@@ -288,7 +292,7 @@ def IST(field, dT, periodized=0):
 
     return ISTcompute(periodize(field, periodized), dT)
 
-def plotEV(MM):
+def plotEV(MM,xl=-5,xr=5, yb=-1, yt=1, alph = 0.2):
     col = ['r','g','b','y']
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -303,11 +307,13 @@ def plotEV(MM):
     # Show ticks in the left and lower axes only
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
-    if np.size(np.size(MM)) ==  1:
-        plt.plot(np.real(MM), np.imag(MM), ls='none', alpha=0.2, marker='o',color=col[0])
+    if np.size(np.size(MM)) ==  np.size(MM,0): 
+        plt.plot(np.real(MM), np.imag(MM), ls='none', alpha=alph, marker='o',color=col[0])
     else:
-        for kk in range(np.size(MM,2)):
-            plt.plot(np.real(MM[:,:,kk]), np.imag(MM[:,:,kk]), ls='none', alpha=0.1, marker='o',color=col[kk])    
+        for kk in range(np.size(MM,1)):
+            plt.plot(np.real(MM[:,kk]), np.imag(MM[:,kk]), ls='none', alpha=alph, marker='o',color=col[kk])    
+    plt.xlim(xl,xr)
+    plt.ylim(yb,yt)
             
 def IST_graf(field, dT, periodized=0):
     coords = []
