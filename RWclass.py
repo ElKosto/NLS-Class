@@ -151,11 +151,15 @@ class RandomWave(Efield):
         self.Span = NofP*dT
         self.TimeStep = dT
         Rf = np.fft.ifft(np.exp(-1*(np.fft.fftfreq(int(NofP),d=dT))**2/4/((dNu/2)**2/2/np.log(2)))*np.exp(1j*np.random.uniform(-1,1,int(NofP))*np.pi))
-        # Above 4 is for the sqrt of intensity        
-        A = np.abs(Rf)**2
-        A = Pavg*A/np.mean(A) + Offset
-        Ph = np.angle(Rf)
-        self.Sig = np.sqrt(A)*np.exp(1j*Ph)
+        # Above 4 is for the sqrt of intensity 
+        if Offset == 0:
+            A = np.abs(Rf)**2
+            A = Pavg*A/np.mean(A)
+            Ph = np.angle(Rf)
+            self.Sig = np.sqrt(A)*np.exp(1j*Ph)
+        else:
+            A = Rf*Pavg**.5+Offset
+            self.Sig = A
         
 #    def __call__(self,dNuNEW,PavgNEW,NofP=1e4,dT=0.05):
 #        self.SpWidth = dNuNEW
