@@ -12,7 +12,7 @@ Try classes!
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import complex_ode
-from scipy.linalg import toeplitz, eigvals
+from scipy.linalg import toeplitz, eigvals,eigh
 #import matplotlib.animation as animation
 import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors
@@ -258,7 +258,7 @@ class Stand_Func(Efield):
 
 
 
-def ISTcompute(field, dT):
+def ISTcompute_f(field, dT):
     # Fourier collocation method for the Z-S eigenvalue problem
     Nx = len(field)
     if Nx%2:
@@ -276,23 +276,43 @@ def ISTcompute(field, dT):
     M = np.concatenate((np.concatenate((-B1, B2), axis=1), np.concatenate((B2.conj().T, B1), axis=1)), axis=0)
     return eigvals(-1j*M)
 
+def ISTcompute_d(field, dT):
+    # Fourier collocation method for the Z-S eigenvalue problem
+    Nx = len(field)
+    if Nx%2:
+        field = np.append(field,field[-1])
+    Nx = len(field)
+    N = Nx/2
+    L = dT*Nx
+    k0 = 2*np.pi/L
+    x = np.arange(-L/2, L/2, dT)
+    C = []    
+    for n in np.arange(-N, N+1):
+        C.append(dT*np.sum(field*np.exp(-1j*k0*n*x))/L)
+    B1 = 1j*k0*np.diag(np.arange(-N, N+1))
+    B2 = toeplitz(np.append(C[N:], np.zeros(N)), np.append(np.flip(C[:N+1], 0), np.zeros(N)))
+    M = np.concatenate((np.concatenate((1j*B1, B2), axis=1), np.concatenate((B2.conj().T, -1j*B1), axis=1)), axis=0)
+    return eigh(M)
+
 def periodize(dat, period, delay=0):
     loc = dat
     for ii in np.arange(period):
         dat = np.append(dat,loc)
     return dat
 
-def IST(field, dT, periodized=0):     
-
+def IST(field, dT, periodized=0,param='foc'):
     def periodize(dat, period, delay=0):
         loc = dat
         for ii in np.arange(period):
             dat = np.append(dat,loc)
         return dat        
+    if param=='foc':
+        return ISTcompute_f(periodize(field, periodized), dT)
+    elif param=='def':
+        return ISTcompute_d(periodize(field, periodized), dT)
 
-    return ISTcompute(periodize(field, periodized), dT)
 
-def plotEV(MM):
+def plotEV(MM,xl=-5,xr=5, yb=-1, yt=1, alph = 0.2):
     col = ['r','g','b','y']
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -307,11 +327,13 @@ def plotEV(MM):
     # Show ticks in the left and lower axes only
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
-    if np.size(np.size(MM)) ==  1:
-        plt.plot(np.real(MM), np.imag(MM), ls='none', alpha=0.2, marker='o',color=col[0])
+    if np.size(MM) ==  np.size(MM,0): 
+        plt.plot(np.real(MM), np.imag(MM), ls='none', alpha=alph, marker='o',color=col[0])
     else:
-        for kk in range(np.size(MM,2)):
-            plt.plot(np.real(MM[:,:,kk]), np.imag(MM[:,:,kk]), ls='none', alpha=0.1, marker='o',color=col[kk])    
+        for kk in range(np.size(MM,1)):
+            plt.plot(np.real(MM[:,kk]), np.imag(MM[:,kk]), ls='none', alpha=alph, marker='o',color=col[kk])    
+    plt.xlim(xl,xr)
+    plt.ylim(yb,yt)
             
 def IST_graf(field, dT, periodized=0):
     coords = []
@@ -449,6 +471,12 @@ def SuperGauss(x, p=3, x0=0, sigma=3, a=1) : return a*np.exp(-1*np.power((x-x0)*
 def Sech(x,a=1.,x0=0,t=1.) : return a/np.cosh(x/t-x0)
 
 def SolitonNLS(x,Pm=1., x0=0, gamma=1., betta2=-1) : return Pm/np.cosh(x*np.sqrt(gamma*Pm/abs(betta2))-x0)
+
+def DarkSoliton(t,a=1,B=1,t0=0):
+    xi=a*B*(t-t0-a*B*np.sqrt(1-B**2))
+    return a*(B*np.tanh(xi)-1j*np.sqrt(1-B**2))
+
+def N_DarkSoliton(t,N):return N*np.tanh(t)
 
 def KMsr (t, x, phi):
     Om = 2*np.sinh(2*phi)
