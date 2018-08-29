@@ -29,12 +29,16 @@ class Efield:
         self.Span = dT*len(CompField)
         
         
-    def Spectrum (self):
+    def Spectrum (self,param = 'p'):
         fr = np.fft.fftfreq(int(len(self.Sig)),d=self.TimeStep)
-        p = np.fft.fft(self.Sig)
-        p = abs(p)**2/np.max(abs(p)**2)       
-        return fr,p
-        
+        a = np.fft.fft(self.Sig)
+        if param == 'a':
+            return fr,a
+        elif param == 'p':
+            p = abs(a)**2/np.max(abs(a)**2)
+            return fr,p
+            
+
     def SaveTxt(self, FullName):
         np.savetxt(FullName, np.transpose((np.real(self.Sig), np.imag(self.Sig))))
         
@@ -278,21 +282,37 @@ def ISTcompute_f(field, dT):
 
 def ISTcompute_d(field, dT):
     # Fourier collocation method for the Z-S eigenvalue problem
-    Nx = len(field)
-    if Nx%2:
-        field = np.append(field,field[-1])
+#    Nx = len(field)
+#    if Nx%2==0:
+#        field = np.append(field,field[-1])
     Nx = len(field)
     N = Nx/2
     L = dT*Nx
     k0 = 2*np.pi/L
-    x = np.arange(-L/2, L/2, dT)
+    x = np.arange(-L/2, L/2-dT/2, dT)
     C = []    
     for n in np.arange(-N, N+1):
         C.append(dT*np.sum(field*np.exp(-1j*k0*n*x))/L)
     B1 = 1j*k0*np.diag(np.arange(-N, N+1))
     B2 = toeplitz(np.append(C[N:], np.zeros(N)), np.append(np.flip(C[:N+1], 0), np.zeros(N)))
     M = np.concatenate((np.concatenate((1j*B1, B2), axis=1), np.concatenate((B2.conj().T, -1j*B1), axis=1)), axis=0)
-    return eigh(M)
+    return eigh(M)[0]
+
+def BO_method(field, dt, lam, sig = -1):
+    for ii in range(len(field)):
+        k=np.sqrt(sig*abs(field[ii])**2+lam**2)
+        M = np.matrix([[np.cosh(k*dt)-1j*lam*np.sinh(k*dt)/k, field[ii]*np.sinh(k*dt)/k], [sig*field[ii].conjugate()*np.sinh(k*dt)/k, np.cosh(k*dt)+1j*lam*np.sinh(k*dt)/k]])
+        if ii == 0:
+            T=M
+        else:
+            T=T*M
+    return T.trace().A[0][0]
+
+def BO_calc(field,dt,lrange, sig=-1):
+    Tr = []
+    for ii in range(len(lrange)):
+        Tr.append(BO_method(field,dt,lrange[ii],sig))
+    return Tr
 
 def periodize(dat, period, delay=0):
     loc = dat
@@ -300,16 +320,23 @@ def periodize(dat, period, delay=0):
         dat = np.append(dat,loc)
     return dat
 
-def IST(field, dT, periodized=0,param='foc'):
+def IST(field, dT, periodized=0,param='foc',method = 'FC', eigVal = []):
     def periodize(dat, period, delay=0):
         loc = dat
         for ii in np.arange(period):
             dat = np.append(dat,loc)
-        return dat        
-    if param=='foc':
-        return ISTcompute_f(periodize(field, periodized), dT)
-    elif param=='def':
-        return ISTcompute_d(periodize(field, periodized), dT)
+        return dat  
+    if method == 'FC':    
+        if param=='foc':
+            return ISTcompute_f(periodize(field, periodized), dT)
+        elif param=='def':
+            return ISTcompute_d(periodize(field, periodized), dT)
+    elif method == 'BO':
+        if param=='foc':
+            return BO_calc(periodize(field, periodized), dT, eigVal, sig=-1)
+        elif param=='def':
+            return BO_calc(periodize(field, periodized), dT, eigVal, sig=1)
+
 
 
 def plotEV(MM,xl=-5,xr=5, yb=-1, yt=1, alph = 0.2):
@@ -370,7 +397,7 @@ def IST_graf(field, dT, periodized=0):
     cid = f.canvas.mpl_connect('button_press_event', onclick)
     
     
-def Plot_Map(map_data,dt,dz,colormap = 'cubehelix'):
+def Plot_Map(map_data,dt=1,dz=1,colormap = 'cubehelix',z0=0):
     def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
         '''
         Function to offset the "center" of a colormap. Useful for
@@ -460,6 +487,27 @@ def Plot_Map(map_data,dt,dz,colormap = 'cubehelix'):
     ax.set_ylabel('Time (ps)')
     ax.set_ylim(0, dt*np.size(map_data,1))
     ax.set_xlim(0, dz*np.size(map_data,0)-5*dz)
+    ix=z0
+    x = int(np.floor(ix/dz))
+    plt.suptitle('Chosen distance z = %f km'%ix, fontsize=20)
+    ax.lines.pop(0)
+    
+    ax.plot([ix,ix], [0, dt*np.size(map_data,1)],'r')
+
+    ax2 = plt.subplot2grid((4, 1), (2, 0))            
+    ax2.plot(np.arange(0,dt*np.size(map_data,1),dt), abs(map_data[x,:])**2, 'r')
+    ax2.set_ylabel('Power (W)')
+    ax2.set_xlim(0, dt*np.size(map_data,1))        
+    ax3 = plt.subplot2grid((4, 1), (3, 0))
+    ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.angle(map_data[x,:])/(np.pi),'b')
+    if max( np.unwrap(np.angle(map_data[x,:]))/(np.pi)) - min( np.unwrap(np.angle(map_data[x,:]))/(np.pi))<10:
+        ax3.plot(np.arange(0,dt*np.size(map_data,1),dt), np.unwrap(np.angle(map_data[x,:]))/(np.pi),'g')
+    ax3.set_xlabel('Time (ps)')
+    ax3.set_ylabel('Phase (rad)')
+    ax3.set_xlim(0, dt*np.size(map_data,1))
+    ax3.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
+    ax3.yaxis.set_major_formatter(ticker.FormatStrFormatter('%g $\pi$'))
+    ax3.grid(True)
 #    f.colorbar(pc)
     plt.subplots_adjust(left=0.07, bottom=0.07, right=0.95, top=0.93, wspace=None, hspace=0.4)
     f.canvas.mpl_connect('button_press_event', onclick)
