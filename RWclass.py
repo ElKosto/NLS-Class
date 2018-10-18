@@ -300,7 +300,7 @@ def ISTcompute_d(field, dT):
 
 def BO_method(field, dt, lam, sig = -1):
     for ii in range(len(field)):
-        k=np.sqrt(sig*abs(field[ii])**2+lam**2)
+        k=np.sqrt(sig*abs(field[ii])**2-lam**2)
         M = np.matrix([[np.cosh(k*dt)-1j*lam*np.sinh(k*dt)/k, field[ii]*np.sinh(k*dt)/k], [sig*field[ii].conjugate()*np.sinh(k*dt)/k, np.cosh(k*dt)+1j*lam*np.sinh(k*dt)/k]])
         if ii == 0:
             T=M
@@ -521,7 +521,7 @@ def Sech(x,a=1.,x0=0,t=1.) : return a/np.cosh(x/t-x0)
 def SolitonNLS(x,Pm=1., x0=0, gamma=1., betta2=-1) : return Pm/np.cosh(x*np.sqrt(gamma*Pm/abs(betta2))-x0)
 
 def DarkSoliton(t,a=1,B=1,t0=0):
-    xi=a*B*(t-t0-a*B*np.sqrt(1-B**2))
+    xi=a*B*(t-t0)
     return a*(B*np.tanh(xi)-1j*np.sqrt(1-B**2))
 
 def N_DarkSoliton(t,N):return N*np.tanh(t)
@@ -530,10 +530,10 @@ def KMsr (t, x, phi):
     Om = 2*np.sinh(2*phi)
     q = 2*np.sinh(phi)
     ii = 0
-    dat_array = np.zeros([np.size(t),np.size(x)])
+    dat_array = np.zeros([np.size(t),np.size(x)],dtype='complex')
     if np.size(x)>1 and np.size(t)>1:
-        for xx in x:
-            dat_array[:,ii] = (np.cos(Om*t-2*1j*phi)-np.cosh(phi)*np.cosh(q*xx))/(np.cos(Om*t)-np.cosh(phi)*np.cosh(q*xx))*np.exp(2*1j*t) 
+        for tt in t:
+            dat_array[ii,:] = (np.cos(Om*tt-2*1j*phi)-np.cosh(phi)*np.cosh(q*x))/(np.cos(Om*tt)-np.cosh(phi)*np.cosh(q*x))*np.exp(2*1j*tt) 
             ii += 1
         return dat_array
     else:
@@ -543,7 +543,7 @@ def ABsr (t, x, phi):
     Om = 2*np.sin(2*phi)
     q = 2*np.sin(phi)
     ii = 0
-    dat_array = np.zeros([np.size(t),np.size(x)])
+    dat_array = np.zeros([np.size(t),np.size(x)],dtype='complex')
     if np.size(x)>1 and np.size(t)>1:
         for xx in x:
             dat_array[:,ii] = (np.cosh(Om*t-2*1j*phi)-np.cos(phi)*np.cos(q*xx))/(np.cosh(Om*t)-np.cos(phi)*np.cos(q*xx))*np.exp(2*1j*t) 
