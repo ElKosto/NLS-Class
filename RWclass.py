@@ -87,7 +87,7 @@ class Efield:
         elif param == 'fin_res':
             return uf
         else:
-            print 'wrong parameter'
+            print ('wrong parameter')
 
     def Propagate_SAM(self, L, betta2=-1, gamma=1, Tr=0, n=50, abtol=1e-10, reltol=1e-9, param='fin_res'):
         """Propagate Using the Step Adaptative  Method"""
@@ -141,7 +141,7 @@ class Efield:
         elif param == 'fin_res':
             return sol[-2, :]
         else:
-            print 'wrong parameter'
+            print ('wrong parameter')
 
 
 class RandomWave(Efield):
@@ -366,7 +366,7 @@ def IST_graf(field, dT, periodized=0):
     coords = []
     def onclick(event):
         ix, iy = event.xdata, event.ydata
-        print 'x = %d, y = %d' % (ix, iy)
+        print ('x = %d, y = %d' % (ix, iy))
         coords.append((ix, iy))
         if np.size(coords, 0) == 2:
             f.canvas.mpl_disconnect(cid)
