@@ -268,7 +268,7 @@ def ISTcompute_f(field, dT):
     if Nx%2:
         field = np.append(field,field[-1])
     Nx = len(field)
-    N = Nx/2
+    N = int(Nx/2)
     L = dT*Nx
     k0 = 2*np.pi/L
     x = np.arange(-L/2, L/2, dT)
@@ -286,7 +286,7 @@ def ISTcompute_d(field, dT):
 #    if Nx%2==0:
 #        field = np.append(field,field[-1])
     Nx = len(field)
-    N = Nx/2
+    N = int(Nx/2)
     L = dT*Nx
     k0 = 2*np.pi/L
     x = np.arange(-L/2, L/2-dT/2, dT)
